@@ -4,6 +4,7 @@ use std::{
     ffi::{c_void, OsStr},
 };
 
+pub mod amd_isa_devices;
 mod interop;
 
 /// Source code for a shader.
@@ -74,6 +75,7 @@ impl<'lib> Atidxx64<'lib> {
     /// and may return a value - that value will be returned from this function.
     pub fn inspect_compiled_shader<T>(
         &self,
+        gpu: crate::amd_isa_devices::Asic,
         shader: AmdDxGsaShaderSource,
         options: Vec<interop::AmdDxGsaCompileOption>,
 
@@ -82,8 +84,8 @@ impl<'lib> Atidxx64<'lib> {
         let (inputType, shaderByteCode) = shader.to_interop();
         unsafe {
             let compile_in = interop::AmdDxGsaCompileShaderInput {
-                chipFamily: todo!(),
-                chipRevision: todo!(),
+                chipFamily: gpu.chipFamily as u32,
+                chipRevision: gpu.chipRevision as u32,
 
                 pShaderByteCode: shaderByteCode.as_ptr() as *const c_void,
                 byteCodeLength: shaderByteCode
@@ -101,7 +103,7 @@ impl<'lib> Atidxx64<'lib> {
                 reserved: [0; 6],
             };
 
-            let compile_out = std::mem::MaybeUninit::zeroed();
+            let mut compile_out = std::mem::MaybeUninit::zeroed();
             let result = (*self.compile_func)(&compile_in, compile_out.as_mut_ptr());
             let compile_out = compile_out.assume_init();
             if result != 0
