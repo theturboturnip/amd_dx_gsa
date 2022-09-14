@@ -6,7 +6,6 @@ use std::path::PathBuf;
 fn main() {
     // Tell cargo to invalidate the built crate whenever the wrapper changes
     println!("cargo:rerun-if-changed=wrapper.h");
-    // println!("cargo:rerun-if-changed=build.rs");
 
     // The bindgen::Builder is the main entry point
     // to bindgen, and lets you build up options for
@@ -18,7 +17,6 @@ fn main() {
         // Only generate bindings for the compile/free functions (and thus all types they use)
         .allowlist_function("AmdDxGsaCompileShader")
         .allowlist_function("AmdDxGsaFreeCompiledShader")
-        // .allowlist_file("assets/devices.h")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
