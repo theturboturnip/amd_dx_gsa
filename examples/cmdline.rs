@@ -27,10 +27,9 @@ fn main() {
     let (_, shader_bytecode) =
         get_shader_bytecode(shader_dxbc.as_slice()).expect("couldn't extract bytecode from DXBC");
 
-    let asic = ASIC_INFO[24];
-
-    let disasm = lib
-        .inspect_compiled_shader(
+    for asic in ASIC_INFO {
+        println!("\nATTEMPT: {}", asic.name);
+        let disasm = lib.inspect_compiled_shader(
             asic,
             amd_dx_gsa::AmdDxGsaShaderSource::DxAsmBinary(shader_bytecode),
             vec![],
@@ -44,8 +43,10 @@ fn main() {
 
                 return disasm;
             },
-        )
-        .expect("couldn't compile shader");
-
-    print!("{}", disasm);
+        );
+        match disasm {
+            Ok(disasm) => println!("Success\n{}", disasm),
+            Err(shader_err) => println!("Fail\n{:?}", shader_err),
+        };
+    }
 }
