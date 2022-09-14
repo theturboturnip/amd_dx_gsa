@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
-use amd_dx_gsa::amd_isa_devices::{ASIC_COUNT, ASIC_INFO};
+use amd_dx_gsa::{
+    amd_isa_devices::{ASIC_COUNT, ASIC_INFO},
+    dxbc::get_shader_bytecode,
+};
 use clap::Parser;
 use object::{Object, ObjectSection};
 
@@ -24,14 +27,16 @@ fn main() {
     let lib = Atidxx64::try_load_lib_from(args.dll_path).expect("no library found");
     let symbols = Atidxx64::try_load_symbols(&lib).expect("no matching symbols");
 
-    let shader_asm = std::fs::read(args.shader_path).expect("couldn't read shader DXASM");
+    let shader_dxbc = std::fs::read(args.shader_path).expect("couldn't read shader DXBC");
+    let (_, shader_bytecode) =
+        get_shader_bytecode(shader_dxbc.as_slice()).expect("couldn't extract bytecode from DXBC");
 
-    let asic = ASIC_INFO[ASIC_COUNT - 1];
+    let asic = ASIC_INFO[24];
 
     let disasm = symbols
         .inspect_compiled_shader(
             asic,
-            amd_dx_gsa::AmdDxGsaShaderSource::DxAsmBinary(shader_asm.as_slice()),
+            amd_dx_gsa::AmdDxGsaShaderSource::DxAsmBinary(shader_bytecode),
             vec![],
             |compiled_elf| {
                 let obj_file = object::File::parse(compiled_elf).expect("no valid ELF");

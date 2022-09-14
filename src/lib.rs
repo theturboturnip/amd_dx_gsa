@@ -5,6 +5,7 @@ use std::{
 };
 
 pub mod amd_isa_devices;
+pub mod dxbc;
 mod interop;
 
 /// Source code for a shader.
@@ -101,11 +102,16 @@ impl<'lib> Atidxx64<'lib> {
                 reserved: [0; 6],
             };
 
-            let mut compile_out = std::mem::MaybeUninit::zeroed();
-            let result = (*self.compile_func)(&compile_in, compile_out.as_mut_ptr());
-            let compile_out = compile_out.assume_init();
-            if result != 0
-                || compile_out.pShaderBinary == std::ptr::null_mut()
+            println!("{:?}", compile_in);
+
+            let mut compile_out = interop::AmdDxGsaCompileShaderOutput {
+                size: std::mem::size_of::<interop::AmdDxGsaCompileShaderOutput>() as u64,
+                pShaderBinary: std::ptr::null_mut(),
+                shaderBinarySize: 0,
+            };
+            let result = (*self.compile_func)(&compile_in, &mut compile_out);
+            println!("result: 0x{:x}", result);
+            if compile_out.pShaderBinary == std::ptr::null_mut()
                 || compile_out.shaderBinarySize < 16
             {
                 panic!("failed to compile shader");
