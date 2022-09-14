@@ -1,9 +1,6 @@
 use std::path::PathBuf;
 
-use amd_dx_gsa::{
-    amd_isa_devices::{ASIC_COUNT, ASIC_INFO},
-    dxbc::get_shader_bytecode,
-};
+use amd_dx_gsa::{amd_isa_devices::ASIC_INFO, dxbc::get_shader_bytecode};
 use clap::Parser;
 use object::{Object, ObjectSection};
 

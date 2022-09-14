@@ -24,6 +24,11 @@ impl<'a> AmdDxGsaShaderSource<'a> {
     }
 }
 
+#[derive(Debug)]
+pub enum ShaderCompileError {
+    CompileFail { result: interop::HRESULT },
+}
+
 /// Struct holding symbols for compiling shaders and freeing the results
 ///
 /// Intended usage:
@@ -32,10 +37,7 @@ impl<'a> AmdDxGsaShaderSource<'a> {
 /// let lib = Atidxx64::try_load_lib().expect("no library found");
 /// let symbols = Atidxx64::try_load_symbols(lib.as_ref()).expect("no matching symbols");
 /// ```
-///
-/// TODO make compile_func and free_func use the types of the functions from libloading
-pub struct Atidxx64<'lib> {
-    lib: &'lib Library,
+pub struct Atidxx64 {
     compile_func: Symbol<
         unsafe extern "C" fn(
             *const interop::AmdDxGsaCompileShaderInput,
@@ -44,11 +46,10 @@ pub struct Atidxx64<'lib> {
     >,
     free_func: Symbol<unsafe extern "C" fn(*const c_void) -> c_void>,
 }
-impl<'lib> Atidxx64<'lib> {
-    pub fn try_load_symbols(lib: &'lib Library) -> Result<Self, libloading::Error> {
+impl Atidxx64 {
+    pub fn try_load_symbols(lib: &Library) -> Result<Self, libloading::Error> {
         unsafe {
             Ok(Self {
-                lib,
                 compile_func: lib.get(b"AmdDxGsaCompileShader\0")?,
                 free_func: lib.get(b"AmdDxGsaFreeCompiledShader\0")?,
             })
@@ -79,19 +80,19 @@ impl<'lib> Atidxx64<'lib> {
         options: Vec<interop::AmdDxGsaCompileOption>,
 
         operation: fn(&[u8]) -> T,
-    ) -> Result<T, &str> {
-        let (inputType, shaderByteCode) = shader.to_interop();
+    ) -> Result<T, ShaderCompileError> {
+        let (input_type, shader_bytecode) = shader.to_interop();
         unsafe {
             let compile_in = interop::AmdDxGsaCompileShaderInput {
                 chipFamily: gpu.chipFamily as u32,
                 chipRevision: gpu.chipRevision as u32,
 
-                pShaderByteCode: shaderByteCode.as_ptr() as *const c_void,
-                byteCodeLength: shaderByteCode
+                pShaderByteCode: shader_bytecode.as_ptr() as *const c_void,
+                byteCodeLength: shader_bytecode
                     .len()
                     .try_into()
                     .expect("shader length doesn't fit in u64"),
-                inputType,
+                inputType: input_type,
 
                 pCompileOptions: options.as_ptr(),
                 numCompileOptions: options
@@ -102,19 +103,17 @@ impl<'lib> Atidxx64<'lib> {
                 reserved: [0; 6],
             };
 
-            println!("{:?}", compile_in);
-
             let mut compile_out = interop::AmdDxGsaCompileShaderOutput {
                 size: std::mem::size_of::<interop::AmdDxGsaCompileShaderOutput>() as u64,
                 pShaderBinary: std::ptr::null_mut(),
                 shaderBinarySize: 0,
             };
             let result = (*self.compile_func)(&compile_in, &mut compile_out);
-            println!("result: 0x{:x}", result);
-            if compile_out.pShaderBinary == std::ptr::null_mut()
+            if result != 0
+                || compile_out.pShaderBinary == std::ptr::null_mut()
                 || compile_out.shaderBinarySize < 16
             {
-                panic!("failed to compile shader");
+                return Err(ShaderCompileError::CompileFail { result });
             }
 
             // Create slice pointing to data
