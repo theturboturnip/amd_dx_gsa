@@ -27,7 +27,13 @@ impl<'a> AmdDxGsaShaderSource<'a> {
 
 #[derive(Debug)]
 pub enum ShaderCompileError {
-    CompileFail { result: interop::HRESULT },
+    OperationAborted,
+    AccessDenied,
+    UnspecifiedFailure,
+    InvalidArg,
+    OutOfMemory,
+    InvalidPointer,
+    Other { result: interop::HRESULT },
 }
 
 /// Struct providing a safe interface to shader compilation via the atidxx64 DLL
@@ -100,7 +106,18 @@ impl Atidxx64 {
                 || compile_out.pShaderBinary == std::ptr::null_mut()
                 || compile_out.shaderBinarySize < 16
             {
-                return Err(ShaderCompileError::CompileFail { result });
+                // Based on https://docs.microsoft.com/en-us/windows/win32/seccrypto/common-hresult-values
+                let err = match result as u32 {
+                    0x80004004 => ShaderCompileError::OperationAborted,
+                    0x80070005 => ShaderCompileError::AccessDenied,
+                    0x80004005 => ShaderCompileError::UnspecifiedFailure,
+                    0x80070057 => ShaderCompileError::InvalidArg,
+                    0x80004003 => ShaderCompileError::InvalidPointer,
+                    0x8007000E => ShaderCompileError::OutOfMemory,
+
+                    _ => ShaderCompileError::Other { result },
+                };
+                return Err(err);
             }
 
             // Create slice pointing to data
