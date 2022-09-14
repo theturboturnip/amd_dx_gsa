@@ -14,12 +14,15 @@ fn main() {
         // The input header we would like to generate
         // bindings for.
         .header("assets/AmdDxGsaCompile.h")
+        .dynamic_library_name("atidxx64")
+        .dynamic_link_require_all(true)
         // Only generate bindings for the compile/free functions (and thus all types they use)
         .allowlist_function("AmdDxGsaCompileShader")
         .allowlist_function("AmdDxGsaFreeCompiledShader")
-        // Tell cargo to invalidate the built crate whenever any of the
-        // included header files changed.
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .allowlist_type("_AmdDxGsaCompileOptionEnum")
+        .newtype_enum("_AmdDxGsaCompileOptionEnum")
+        .newtype_enum("AmdDxGsaCompileOptionEnum")
+        // Don't reload on dependent headers - the only dependent header is windows.h, which is used for very basic type aliases
         // Finish the builder and generate the bindings.
         .generate()
         // Unwrap the Result and panic on failure.

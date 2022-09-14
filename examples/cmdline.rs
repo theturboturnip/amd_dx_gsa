@@ -21,8 +21,7 @@ fn main() {
     use amd_dx_gsa::Atidxx64;
     let args = Args::parse();
 
-    let lib = Atidxx64::try_load_lib_from(args.dll_path).expect("no library found");
-    let symbols = Atidxx64::try_load_symbols(&lib).expect("no matching symbols");
+    let lib = unsafe { Atidxx64::try_load_lib_from(args.dll_path).expect("no library found") };
 
     let shader_dxbc = std::fs::read(args.shader_path).expect("couldn't read shader DXBC");
     let (_, shader_bytecode) =
@@ -30,7 +29,7 @@ fn main() {
 
     let asic = ASIC_INFO[24];
 
-    let disasm = symbols
+    let disasm = lib
         .inspect_compiled_shader(
             asic,
             amd_dx_gsa::AmdDxGsaShaderSource::DxAsmBinary(shader_bytecode),

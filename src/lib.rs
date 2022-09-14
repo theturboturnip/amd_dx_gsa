@@ -1,4 +1,3 @@
-use libloading::os::windows::{Library, Symbol};
 use std::{
     convert::TryInto,
     ffi::{c_void, OsStr},
@@ -7,6 +6,8 @@ use std::{
 pub mod amd_isa_devices;
 pub mod dxbc;
 mod interop;
+pub use interop::AmdDxGsaCompileOption;
+pub use interop::AmdDxGsaCompileOptionEnum;
 
 /// Source code for a shader.
 ///
@@ -29,36 +30,22 @@ pub enum ShaderCompileError {
     CompileFail { result: interop::HRESULT },
 }
 
-/// Struct holding symbols for compiling shaders and freeing the results
+/// Struct providing a safe interface to shader compilation via the atidxx64 DLL
 ///
 /// Intended usage:
 /// ```no_run
 /// use amd_dx_gsa::Atidxx64;
 /// let lib = Atidxx64::try_load_lib().expect("no library found");
-/// let symbols = Atidxx64::try_load_symbols(lib.as_ref()).expect("no matching symbols");
+/// lib.inspect_compiled_shader(...);
 /// ```
-pub struct Atidxx64 {
-    compile_func: Symbol<
-        unsafe extern "C" fn(
-            *const interop::AmdDxGsaCompileShaderInput,
-            *mut interop::AmdDxGsaCompileShaderOutput,
-        ) -> interop::HRESULT,
-    >,
-    free_func: Symbol<unsafe extern "C" fn(*const c_void) -> c_void>,
-}
+pub struct Atidxx64(interop::atidxx64);
 impl Atidxx64 {
-    pub fn try_load_symbols(lib: &Library) -> Result<Self, libloading::Error> {
-        unsafe {
-            Ok(Self {
-                compile_func: lib.get(b"AmdDxGsaCompileShader\0")?,
-                free_func: lib.get(b"AmdDxGsaFreeCompiledShader\0")?,
-            })
-        }
+    pub unsafe fn try_load_lib_from<P: AsRef<OsStr>>(
+        filename: P,
+    ) -> Result<Self, libloading::Error> {
+        Ok(Self(interop::atidxx64::new(filename)?))
     }
-    pub fn try_load_lib_from<P: AsRef<OsStr>>(filename: P) -> Result<Library, libloading::Error> {
-        unsafe { Ok(Library::new(filename)?) }
-    }
-    pub fn try_load_lib() -> Result<Library, libloading::Error> {
+    pub unsafe fn try_load_lib() -> Result<Self, libloading::Error> {
         Self::try_load_lib_from("atidxx64.dll")
     }
 
@@ -77,7 +64,7 @@ impl Atidxx64 {
         &self,
         gpu: crate::amd_isa_devices::Asic,
         shader: AmdDxGsaShaderSource,
-        options: Vec<interop::AmdDxGsaCompileOption>,
+        options: Vec<AmdDxGsaCompileOption>,
 
         operation: fn(&[u8]) -> T,
     ) -> Result<T, ShaderCompileError> {
@@ -108,7 +95,7 @@ impl Atidxx64 {
                 pShaderBinary: std::ptr::null_mut(),
                 shaderBinarySize: 0,
             };
-            let result = (*self.compile_func)(&compile_in, &mut compile_out);
+            let result = self.0.AmdDxGsaCompileShader(&compile_in, &mut compile_out);
             if result != 0
                 || compile_out.pShaderBinary == std::ptr::null_mut()
                 || compile_out.shaderBinarySize < 16
@@ -129,7 +116,7 @@ impl Atidxx64 {
             let out = operation(slice);
 
             // Free the original data
-            (*self.free_func)(compile_out.pShaderBinary);
+            self.0.AmdDxGsaFreeCompiledShader(compile_out.pShaderBinary);
 
             // Return the operation output
             Ok(out)
