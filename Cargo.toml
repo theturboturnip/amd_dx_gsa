@@ -8,5 +8,9 @@ edition = "2021"
 [dependencies]
 libloading = "0.7.3"
 
+[dev-dependencies]
+clap = { version = "3.2.21", features = ["derive"] }
+object = "0.29.0"
+
 [build-dependencies]
 bindgen = "0.60.1"

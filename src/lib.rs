@@ -53,12 +53,10 @@ impl<'lib> Atidxx64<'lib> {
             })
         }
     }
-    pub fn try_load_lib_from<P: AsRef<OsStr>>(
-        filename: P,
-    ) -> Result<Box<Library>, libloading::Error> {
-        unsafe { Ok(Box::new(Library::new(filename)?)) }
+    pub fn try_load_lib_from<P: AsRef<OsStr>>(filename: P) -> Result<Library, libloading::Error> {
+        unsafe { Ok(Library::new(filename)?) }
     }
-    pub fn try_load_lib() -> Result<Box<Library>, libloading::Error> {
+    pub fn try_load_lib() -> Result<Library, libloading::Error> {
         Self::try_load_lib_from("atidxx64.dll")
     }
 

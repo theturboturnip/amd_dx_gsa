@@ -1,13 +1,10 @@
-// #include "amd_isa_devices.h"
-// #include "common/common.h"
-// #include "official/RGA/Common/AsicReg/devices.h"
-
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
 include!(concat!(env!("OUT_DIR"), "/device_bindings.rs"));
 
+#[derive(Debug, Copy, Clone)]
 pub struct Asic {
     pub name: &'static str,        // const char *name;
     pub gfxIpString: &'static str, // const char *gfxIpString;
