@@ -66,13 +66,13 @@ impl Atidxx64 {
     ///
     /// The `operation` function is run on a byte-slice containing that ELF file,
     /// and may return a value - that value will be returned from this function.
-    pub fn inspect_compiled_shader<T>(
+    pub fn inspect_compiled_shader<T, F: Fn(&[u8]) -> T>(
         &self,
         gpu: crate::amd_isa_devices::Asic,
         shader: AmdDxGsaShaderSource,
         options: Vec<AmdDxGsaCompileOption>,
 
-        operation: fn(&[u8]) -> T,
+        operation: F,
     ) -> Result<T, ShaderCompileError> {
         let (input_type, shader_bytecode) = shader.to_interop();
         unsafe {
