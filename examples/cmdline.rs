@@ -35,17 +35,25 @@ fn main() {
             vec![],
             |compiled_elf| {
                 let obj_file = object::File::parse(compiled_elf).expect("no valid ELF");
-                let disasm_section = obj_file
+                let amdil_disasm_section = obj_file
                     .section_by_name(".amdil_disassembly")
                     .expect("no .amdil_disassembly section");
-                let disasm = String::from_utf8(disasm_section.data().unwrap().to_vec())
+                let amdil_disasm = String::from_utf8(amdil_disasm_section.data().unwrap().to_vec())
                     .expect("amdil disassembly not valid UTF_8?");
 
-                return disasm;
+                let disasm_section = obj_file
+                    .section_by_name(".disassembly")
+                    .expect("no .disassembly section");
+                let disasm = String::from_utf8(disasm_section.data().unwrap().to_vec())
+                    .expect("disassembly not valid UTF_8?");
+
+                return (amdil_disasm, disasm);
             },
         );
         match disasm {
-            Ok(disasm) => println!("Success\n{}", disasm),
+            Ok((amdil_disasm, disasm)) => {
+                println!("Success\nAMDIL: {}\nRAW: {}\n", amdil_disasm, disasm)
+            }
             Err(shader_err) => println!("Fail\n{:?}", shader_err),
         };
     }
