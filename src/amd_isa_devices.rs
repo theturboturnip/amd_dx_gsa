@@ -28,6 +28,14 @@ impl Asic {
 pub const LEGACY_ASIC_COUNT: usize = 20;
 pub const ASIC_COUNT: usize = 31;
 
+pub const FIRST_RDNA2_ASIC: Asic = Asic::from_tuple((
+    "RDNA (gfx1010)",
+    "1010",
+    FAMILY_NV,
+    NV_NAVI10_P_A0,
+    "gfx1010",
+));
+
 pub const ASIC_INFO: [Asic; ASIC_COUNT] = [
     // Southern Islands
     Asic::from_tuple(("GCN (Tahiti)", "6", FAMILY_SI, SI_TAHITI_P_B1, "gfx600")),
@@ -76,13 +84,7 @@ pub const ASIC_INFO: [Asic; ASIC_COUNT] = [
     Asic::from_tuple(("GCN (gfx902)", "902", FAMILY_AI, AI_GD_P0, "gfx902")),
     Asic::from_tuple(("GCN (gfx906)", "906", FAMILY_AI, AI_VEGA20_P_A0, "gfx906")),
     // Navi
-    Asic::from_tuple((
-        "RDNA (gfx1010)",
-        "1010",
-        FAMILY_NV,
-        NV_NAVI10_P_A0,
-        "gfx1010",
-    )),
+    FIRST_RDNA2_ASIC,
     Asic::from_tuple((
         "RDNA (gfx1012)",
         "1012",
