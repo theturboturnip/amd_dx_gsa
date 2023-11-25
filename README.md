@@ -10,6 +10,8 @@ Shamelessly steals the header and DLL from RenderDoc:
 - `assets/devices.h` from [https://github.com/baldurk/renderdoc/blob/58437e426f5e5f564ffc2b6b0410a530b45f96cd/renderdoc/driver/ihv/amd/official/RGA/Common/AsicReg/devices.h](https://github.com/baldurk/renderdoc/blob/58437e426f5e5f564ffc2b6b0410a530b45f96cd/renderdoc/driver/ihv/amd/official/RGA/Common/AsicReg/devices.h)
 - `assets/atidxx64.dll` from my RenderDoc v1.19 install
 
+The headers are parsed into Rust using `bindgen` which requires `libclang` to be installed [(see `bindgen` install instructions here)](https://rust-lang.github.io/rust-bindgen/requirements.html)
+
 Additionally, parsing code and the usage of the DLL is based on [RenderDoc's parsing code.](https://github.com/baldurk/renderdoc/blob/58437e426f5e5f564ffc2b6b0410a530b45f96cd/renderdoc/driver/ihv/amd/amd_isa_win32.cpp)
 
 NOTE: To use this library you need `atidxx64.dll`.
