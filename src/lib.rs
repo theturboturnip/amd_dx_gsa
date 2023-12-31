@@ -39,7 +39,7 @@ pub enum ShaderCompileError {
 /// Struct providing a safe interface to shader compilation via the atidxx64 DLL
 ///
 /// Intended usage:
-/// ```no_run
+/// ```ignore
 /// use amd_dx_gsa::Atidxx64;
 /// let lib = Atidxx64::try_load_lib().expect("no library found");
 /// lib.inspect_compiled_shader(...);
