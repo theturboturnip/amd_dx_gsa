@@ -2,6 +2,7 @@ use std::{
     convert::TryInto,
     ffi::{c_void, OsStr},
 };
+use thiserror::Error;
 
 pub mod amd_isa_devices;
 pub mod dxbc;
@@ -25,14 +26,22 @@ impl<'a> AmdDxGsaShaderSource<'a> {
     }
 }
 
-#[derive(Debug)]
+// TOdO use windows-rs HRESULT here?
+#[derive(Debug, Error)]
 pub enum ShaderCompileError {
+    #[error("Operation aborted")]
     OperationAborted,
+    #[error("Access denied")]
     AccessDenied,
+    #[error("Unspecified failure")]
     UnspecifiedFailure,
+    #[error("Invalid arg")]
     InvalidArg,
+    #[error("Out of memory")]
     OutOfMemory,
+    #[error("Invalid pointer")]
     InvalidPointer,
+    #[error("HRESULT Error 0x{result:>08x}")]
     Other { result: interop::HRESULT },
 }
 
@@ -66,8 +75,10 @@ impl Atidxx64 {
     ///
     /// The `operation` function is run on a byte-slice containing that ELF file,
     /// and may return a value - that value will be returned from this function.
-    pub fn inspect_compiled_shader<T, F: Fn(&[u8]) -> T>(
-        &self,
+    /// 
+    /// TODO: Gah fuck this doesn't stop the F from returning the slice that is freed
+    pub fn inspect_compiled_shader<'dll: 'data, 'data, T: 'dll, F: FnOnce(&'data [u8]) -> T>(
+        &'dll self,
         gpu: crate::amd_isa_devices::Asic,
         shader: AmdDxGsaShaderSource,
         options: Vec<AmdDxGsaCompileOption>,
@@ -75,7 +86,7 @@ impl Atidxx64 {
         operation: F,
     ) -> Result<T, ShaderCompileError> {
         let (input_type, shader_bytecode) = shader.to_interop();
-        unsafe {
+        let (compile_out, slice): (_, &'data[u8]) = unsafe {
             let compile_in = interop::AmdDxGsaCompileShaderInput {
                 chipFamily: gpu.chipFamily as u32,
                 chipRevision: gpu.chipRevision as u32,
@@ -121,22 +132,24 @@ impl Atidxx64 {
             }
 
             // Create slice pointing to data
-            let slice = std::slice::from_raw_parts(
+            (compile_out, std::slice::from_raw_parts(
                 compile_out.pShaderBinary as *const u8,
                 compile_out
                     .shaderBinarySize
                     .try_into()
                     .expect("compiled shader size doesn't fit in usize"),
-            );
+            ))
+        };
 
             // Run an operation on the data
             let out = operation(slice);
 
+        unsafe {
             // Free the original data
             self.0.AmdDxGsaFreeCompiledShader(compile_out.pShaderBinary);
-
-            // Return the operation output
-            Ok(out)
         }
+
+        // Return the operation output
+        Ok(out)
     }
 }

@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 libloading = "0.7.3"
 nom = "7.1.1"
+thiserror = "1.0.56"
 
 [dev-dependencies]
 clap = { version = "3.2.21", features = ["derive"] }
